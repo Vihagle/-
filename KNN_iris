@@ -1,0 +1,63 @@
+import numpy as np
+import pandas as pd
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split #切分数据集为训练集和测试集
+from sklearn.metrics import accuracy_score #用来计算分类预测的准确率
+
+#数据加载和预处理
+iris = load_iris()
+df = pd.DataFrame(data = iris['data'],columns=iris['feature_names'])
+df['class'] = iris['target']
+df['class'] = df['class'].map({i:iris['target_names'][i] for i in range(len(iris['target_names']))})
+print(df)
+# print(df.describe())
+
+#提取数据
+x = iris.data
+y = iris.target.reshape(-1,1) #转化为二维矩阵
+
+#划分训练集和测试集
+x_train,x_test,y_train,y_test = train_test_split(x,y,test_size = 0.3,random_state=35,stratify=y)
+
+#核心算法实现
+#距离函数定义
+def l1_distance(a,b):
+    return np.sum(np.abs(a-b),axis=1) #曼哈顿距离
+def l2_distance(a,b):
+    return np.sqrt(np.sum((a-b)**2,axis = 1)) #欧式距离
+class KNN(object):
+    def __init__(self,n_neighbors = 1,dist_func = l1_distance):
+        self.n_neighbors = n_neighbors #定义超参数K，即邻居数K
+        self.dist_func = dist_func
+    def fit(self,x,y): #传入x_train,y_train，训练模型
+        self.x_train = x
+        self.y_train = y
+    def predict(self,x):
+        #初始化预测分类数组
+        y_pred = np.zeros((x.shape[0],1),dtype=self.y_train.dtype)
+        for i,x_test in enumerate(x):
+            #计算x_test与x_train所有点之间的距离
+            distances = self.dist_func(self.x_train,x_test)
+            print(f'距离如下：{distances}')
+            #将所有计算出来的距离进行排序，返回索引值
+            nn_index = np.argsort(distances)
+            print(f'将所有距离进行排序，并返回对应索引值：{nn_index}')
+            #找出最近的几个点的索引，保存对应y_train
+            nn_y = self.y_train[nn_index[0:self.n_neighbors]].ravel()
+            print(f'指定最近的几个点的索引，所对应的y_train值如下：{nn_y}')
+            #统计对应y_train类别中频率最高的那个，赋值给y_pred[i]
+            y_pred[i] = np.argmax(np.bincount(nn_y))
+            print(f'y_train中出现频率最高的类别为{y_pred[i]}')
+        return y_pred
+
+#测试
+#定义一个实例
+knn = KNN(n_neighbors = 3)
+#训练模型
+knn.fit(x_train,y_train)
+#传入测试数据做预测
+y_pred = knn.predict(x_test)
+#求出预测准确率
+accuracy = accuracy_score(y_test,y_pred)
+
+print(f'预测准确率为{accuracy}')
