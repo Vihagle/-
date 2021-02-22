@@ -100,7 +100,16 @@ else:
     with open('id_class.pkl','rb') as file:
         id_class = pickle.load(file)
 
-if not
+if not os.path.exists('class_id.pkl'):
+    from collections import defaultdict
+    #创建class_id
+    class_id = defaultdict(set)
+    for index,class_ in id_class.items():
+        #只统计新华社发布的class_id
+        if index in xinhuashe_news_index.tolist():
+            class_id[class_].add(index)
+    with open('class_id.pkl','wb') as file:
+        pickle.dump(class_id,file)
 else:
     #调用上次结果
     with open('class_id.pkl','rb') as file:
